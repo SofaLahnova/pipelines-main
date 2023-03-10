@@ -18,10 +18,19 @@ TASKS = [
         table='norm',
         output_file='norm',
     ),
+    tasks.RunSQL('''CREATE TABLE original
+                          (ID INT PRIMARY KEY     NOT NULL,
+                           name          TEXT    NOT NULL,
+                           url         text NOT NULL ); '''),
 
     # clean up:
-    tasks.RunSQL('drop table {original}'),
-    tasks.RunSQL('drop table {norm}'),
+
+    tasks.RunSQL("insert INTO original VALUES(1,'hello','http://hello.com/home');"),
+
+    #tasks.RunSQL('drop table original;'),
+    #tasks.RunSQL('drop table norm;'),
+    
+
 ]
 
 

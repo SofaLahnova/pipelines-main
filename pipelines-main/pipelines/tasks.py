@@ -52,11 +52,12 @@ class RunSQL(BaseTask):
         return f'{self.title}'
 
     def run(self):
-        print(f"Run SQL ({self.title}):\n{self.sql_query}")       
+        print(f"Run SQL ({self.title}):\n{self.sql_query}") 
         conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost')
         cursor = conn.cursor()
         cursor.execute(self.sql_query)
-        records = cursor.fetchall()
+        conn.commit()
+        #records = cursor.fetchall()
         cursor.close()
         conn.close()
 
