@@ -1,4 +1,6 @@
 import psycopg2
+import csv
+
 class BaseTask:
     """Base Pipeline Task"""
 
@@ -24,6 +26,20 @@ class CopyToFile(BaseTask):
         return f'{self.table} -> {self.output_file}'
 
     def run(self):
+        conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost')
+        cursor = conn.cursor()
+
+        data = [('id', 'name', 'url', 'domain_of_url')]
+
+        cursor.execute("SELECT * FROM " + self.table)
+        for row in cursor:
+            data.append(row)
+                    
+        myFile = open(self.output_file + '.csv', 'w', newline='')
+        with myFile:
+            writer = csv.writer(myFile)
+            writer.writerows(data)
+
         print(f"Copy table `{self.table}` to file `{self.output_file}`")
 
 
@@ -38,6 +54,20 @@ class LoadFile(BaseTask):
         return f'{self.input_file} -> {self.table}'
 
     def run(self):
+        data = []
+        with open('original.csv', newline='') as File:  
+            reader = csv.reader(File)
+            for row in reader:
+                # у меня первая строка это названия столбцов
+                if (row[0] != 'id'):
+                    temp = (row[0], row[1], row[2])
+                    data.append(temp)
+        
+        conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost')
+        cursor = conn.cursor()
+        cursor.executemany("INSERT INTO original VALUES(%s, %s, %s);", data)
+        conn.commit()
+        
         print(f"Load file `{self.input_file}` to table `{self.table}`")
 
 
@@ -57,9 +87,11 @@ class RunSQL(BaseTask):
         cursor = conn.cursor()
         cursor.execute(self.sql_query)
         conn.commit()
-        #records = cursor.fetchall()
+        #print(cursor.fetchall())
+
         cursor.close()
         conn.close()
+        
 
 
 
@@ -74,5 +106,26 @@ class CTAS(BaseTask):
     def short_description(self):
         return f'{self.title}'
 
+   
+
     def run(self):
+        conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost')
+        cursor = conn.cursor()
+         
+        postgresql_func = """
+            CREATE OR REPLACE FUNCTION domain_of_url(x text)
+              RETURNS text AS 
+              $$
+            BEGIN
+             RETURN split_part(split_part(x, '://', 2), '/', 1) ;            
+            END;
+              $$
+            LANGUAGE PLPGSQL;
+            """
+ 
+        cursor.execute(postgresql_func)
+        conn.commit()
+        cursor.execute("Create table " + self.table + " as " + self.sql_query + "")
+        conn.commit()
         print(f"Create table `{self.table}` as SELECT:\n{self.sql_query}")
+
