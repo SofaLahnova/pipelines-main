@@ -55,16 +55,22 @@ class LoadFile(BaseTask):
 
     def run(self):
         data = []
-        with open('original.csv', newline='') as File:  
+        # считываем данные из файла
+        with open(self.input_file, newline='') as File:  
             reader = csv.reader(File)
             for row in reader:
-                # у меня первая строка это названия столбцов
+                # первая строка это названия столбцов
                 if (row[0] != 'id'):
                     temp = (row[0], row[1], row[2])
                     data.append(temp)
-        
-        conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost')
+        conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost') 
         cursor = conn.cursor()
+        #создаем таблицу
+        cursor.execute('''CREATE TABLE original
+                          (ID INT PRIMARY KEY     NOT NULL,
+                          name          TEXT    NOT NULL,
+                          url         text NOT NULL ); '''),       
+        #вставляем данные
         cursor.executemany("INSERT INTO original VALUES(%s, %s, %s);", data)
         conn.commit()
         
@@ -87,8 +93,6 @@ class RunSQL(BaseTask):
         cursor = conn.cursor()
         cursor.execute(self.sql_query)
         conn.commit()
-        #print(cursor.fetchall())
-
         cursor.close()
         conn.close()
         
@@ -111,7 +115,7 @@ class CTAS(BaseTask):
     def run(self):
         conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost')
         cursor = conn.cursor()
-         
+        # создаем хранимую процкдуру для определения домена 
         postgresql_func = """
             CREATE OR REPLACE FUNCTION domain_of_url(x text)
               RETURNS text AS 
