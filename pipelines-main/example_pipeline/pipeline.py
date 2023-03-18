@@ -5,8 +5,7 @@ NAME = 'test_project'
 VERSION = '2023'
 
 
-TASKS = [    
-   
+TASKS = [     
 
     tasks.LoadFile(input_file='original.csv', table='original'),
    

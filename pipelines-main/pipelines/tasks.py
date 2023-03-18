@@ -29,8 +29,11 @@ class CopyToFile(BaseTask):
         conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost')
         cursor = conn.cursor()
 
-        data = [('id', 'name', 'url', 'domain_of_url')]
-
+        sql = "SELECT * FROM " + self.table+";" 
+  
+        cursor.execute(sql)
+        data = [(desc[0] for desc in cursor.description)]
+        
         cursor.execute("SELECT * FROM " + self.table)
         for row in cursor:
             data.append(row)
@@ -55,23 +58,31 @@ class LoadFile(BaseTask):
 
     def run(self):
         data = []
+        i=0
         # считываем данные из файла
         with open(self.input_file, newline='') as File:  
             reader = csv.reader(File)
             for row in reader:
                 # первая строка это названия столбцов
-                if (row[0] != 'id'):
-                    temp = (row[0], row[1], row[2])
+                if i == 0 : column = tuple(row)             
+                else:
+                    temp = tuple(row)
                     data.append(temp)
+                i=1
+        
         conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost') 
         cursor = conn.cursor()
         #создаем таблицу
-        cursor.execute('''CREATE TABLE original
-                          (ID INT PRIMARY KEY     NOT NULL,
-                          name          TEXT    NOT NULL,
-                          url         text NOT NULL ); '''),       
+        cr_tb = "CREATE TABLE "+self.table+ "("
+        for i in range(len(column)):
+            if i != len(column)-1 : 
+                cr_tb += column[i]+" text, "
+            else : cr_tb += column[i]+" text); " 
+        
+        cursor.execute(cr_tb)     
         #вставляем данные
-        cursor.executemany("INSERT INTO original VALUES(%s, %s, %s);", data)
+        ins_data = "INSERT INTO "+self.table+" VALUES("+"%s,"*(len(column)-1)+" %s);"
+        cursor.executemany(ins_data, data)
         conn.commit()
         
         print(f"Load file `{self.input_file}` to table `{self.table}`")
