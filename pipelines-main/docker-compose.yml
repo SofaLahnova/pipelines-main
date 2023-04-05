@@ -1,0 +1,30 @@
+version: '3.1'
+
+services:
+  db:
+    build: ./db/
+    container_name: db
+    restart: always
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  pipelines:
+    build: ./
+    ports:
+        - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    container_name: pipelines
+    environment:
+      POSTGRES_DB: "example_bd"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "2143"
+      POSTGRES_HOST: db
+    volumes:
+      - ./example_pipeline/original.csv:/pipelines-main/example_pipeline/original.csv     

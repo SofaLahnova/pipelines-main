@@ -1,14 +1,25 @@
 import psycopg2
 import csv
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
+POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
+POSTGRES_USER = os.getenv('POSTGRES_USER')
+POSTGRES_DB = os.getenv('POSTGRES_DB')
+POSTGRES_HOST = os.getenv('POSTGRES_HOST')
+POSTGRES_PORT='5432'
 
 class BaseTask:
     """Base Pipeline Task"""
+  
 
     def run(self):
         raise RuntimeError('Do not run BaseTask!')
 
     def short_description(self):
-        pass
+        pass  
 
     def __str__(self):
         task_type = self.__class__.__name__
@@ -26,7 +37,8 @@ class CopyToFile(BaseTask):
         return f'{self.table} -> {self.output_file}'
 
     def run(self):
-        conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost')
+        
+        conn = psycopg2.connect(dbname=POSTGRES_DB, user=POSTGRES_USER, password=POSTGRES_PASSWORD, host=POSTGRES_HOST, port = POSTGRES_PORT)
         cursor = conn.cursor()
 
         sql = "SELECT * FROM " + self.table+";" 
@@ -69,8 +81,7 @@ class LoadFile(BaseTask):
                     temp = tuple(row)
                     data.append(temp)
                 i=1
-        
-        conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost') 
+        conn = psycopg2.connect(dbname=POSTGRES_DB, user=POSTGRES_USER, password=POSTGRES_PASSWORD, host=POSTGRES_HOST, port = POSTGRES_PORT)
         cursor = conn.cursor()
         #создаем таблицу
         cr_tb = "CREATE TABLE "+self.table+ "("
@@ -100,7 +111,7 @@ class RunSQL(BaseTask):
 
     def run(self):
         print(f"Run SQL ({self.title}):\n{self.sql_query}") 
-        conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost')
+        conn = psycopg2.connect(dbname=POSTGRES_DB, user=POSTGRES_USER, password=POSTGRES_PASSWORD, host=POSTGRES_HOST, port = POSTGRES_PORT)
         cursor = conn.cursor()
         cursor.execute(self.sql_query)
         conn.commit()
@@ -124,7 +135,7 @@ class CTAS(BaseTask):
    
 
     def run(self):
-        conn = psycopg2.connect(dbname='example_bd', user='postgres', password='2143', host='localhost')
+        conn = psycopg2.connect(dbname=POSTGRES_DB, user=POSTGRES_USER, password=POSTGRES_PASSWORD, host=POSTGRES_HOST, port = POSTGRES_PORT)
         cursor = conn.cursor()
         # создаем хранимую процкдуру для определения домена 
         postgresql_func = """
